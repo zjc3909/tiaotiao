@@ -9,12 +9,14 @@ import java.io.IOException;
 import javax.imageio.ImageIO;
 
 public class Tiaotiao {
-	
-	private static String IMAGE_PATH = "/Users/gavin/Downloads/screenshot.png";
-	private static String IMAGE_OUT_PATH = "/Users/gavin/Downloads/jump/screenshot_out";
+    
+	private static final String IMAGE_PATH = "/Users/gavin/Downloads/screenshot.png";
+	private static final String IMAGE_OUT_PATH = "/Users/gavin/Downloads/jump/screenshot_out";
+
+    private static final int SCREEN_START_Y = 500;
+    private static final int SCREEN_END_Y = 1500;
+
 	private static String mImageOutPath = "";
-	private static int mStartY = 450;
-	private static int mEndY = 1500;
 	private static int mBasicR = 0;
 	private static int mBasicG = 0;
 	private static int mBasicB = 0;
@@ -35,6 +37,14 @@ public class Tiaotiao {
 				mImageOutPath = IMAGE_OUT_PATH + mJumpTime + ".png";
 				getScreenshot();
 				getPosition();
+                if (mTargetX < 100 || mTargetX > 1000){
+                    System.out.println("Target position error, continue.\n");
+                    continue;
+                }
+                if (mPersonX < 0 || mPersonY < 0 || mTargetX < 0 || mTargetY < 0){
+                    System.out.println("Position error, continue.\n");
+                    continue;
+                }
 				time = Math.sqrt((mTargetX - mPersonX) * (mTargetX - mPersonX) + (mTargetY - mPersonY) * (mTargetY - mPersonY));
 				time = time * 1.35;
 				System.out.println("Need swipe time = " + time + "\n");
@@ -93,9 +103,7 @@ public class Tiaotiao {
 
         // 只搜索屏幕中间矩形区域，可根据分辨率配置高度
         int width = bi.getWidth();  
-        int height = mEndY; 
         int minx = bi.getMinX();  
-        int miny = mStartY;  
 
         int personStartX = 0;
         int personStartY = 0;
@@ -118,7 +126,7 @@ public class Tiaotiao {
         System.out.println("mBasicR = " + mBasicR + ", mBasicG = " + mBasicG + ", mBasicB = " + mBasicB);
         
         // 获取小人区域和中心点
-        for (int j = miny; j < height; j++) {  
+        for (int j = SCREEN_START_Y; j < SCREEN_END_Y; j++) {  
         	for (int i = minx; i < width; i++) {  
                 pixel = bi.getRGB(i, j); 
                 rgb[0] = (pixel & 0xff0000) >> 16;  
@@ -164,7 +172,7 @@ public class Tiaotiao {
         
         
         // 获取下一个物体位置
-        for (int j = miny; j < height; j++) {  
+        for (int j = SCREEN_START_Y; j < SCREEN_END_Y; j++) {  
         	for (int i = minx; i < width; i++) {  
                 pixel = bi.getRGB(i, j); 
                 rgb[0] = (pixel & 0xff0000) >> 16;  
@@ -184,7 +192,7 @@ public class Tiaotiao {
                 // 从上至下横向便利每个点（排除上面的背景色和小人纵向区域），获取到的第一个其他颜色点即为物体上边缘点
                 if (targetStartX == 0){
                 	targetStartX = i;
-                	targetStartY = j + 10; // 加点偏移量，使其定位到物体较大面积区域的颜色
+                	targetStartY = j + 15; // 加点偏移量，使其定位到物体较大面积区域的颜色
                 	pixel = bi.getRGB(targetStartX, targetStartY); 
                     rgb[0] = (pixel & 0xff0000) >> 16;  
                     rgb[1] = (pixel & 0xff00) >> 8;  
@@ -200,9 +208,10 @@ public class Tiaotiao {
                 if (targetStartX != 0 &&targetStartY != 0){
                 	if (i >= targetStartX - 25 && i < targetStartX + 25 && j < targetStartY + mTargetHeight && getColorOffset(targetR, targetG, targetB, rgb[0], rgb[1], rgb[2]) <= 3){
                 		targetEndX = i;
-                		targetEndY = j;
+                		targetEndY = j - 15;
                 	}
                 }
+
             }  
         }  
         
@@ -216,7 +225,7 @@ public class Tiaotiao {
         drawPoint(mImageOutPath, Color.red, targetStartX, targetStartY);
         drawPoint(mImageOutPath, Color.red, targetEndX, targetEndY);
         drawPoint(mImageOutPath, Color.red, mTargetX, mTargetY);
-        drawRect(mImageOutPath, 0, mStartY, width, mEndY - mStartY);
+        drawRect(mImageOutPath, 0, SCREEN_START_Y, width, SCREEN_END_Y - SCREEN_START_Y);
         
     }  
 	
