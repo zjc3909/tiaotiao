@@ -6,6 +6,9 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 
+import java.awt.*;  
+import javax.swing.*;  
+
 import javax.imageio.ImageIO;
 
 public class Tiaotiao {
@@ -13,23 +16,65 @@ public class Tiaotiao {
 	private static final String IMAGE_PATH = "/Users/gavin/Downloads/screenshot.png";
 	private static final String IMAGE_OUT_PATH = "/Users/gavin/Downloads/jump/screenshot_out";
 
-    private static final int SCREEN_START_Y = 500;
-    private static final int SCREEN_END_Y = 1500;
+    private static final int SCREEN_WIDTH = 1080; // 屏幕分辨率
+    private static final int SCREEN_HEIGHT = 1920;
+
+    private static final int SCREEN_START_Y = SCREEN_HEIGHT / 4;
+    private static final int SCREEN_END_Y = SCREEN_HEIGHT - SCREEN_START_Y;
+
+    private static final double JUMP_VALUE = 1.35; // 跳跃系数，单位ms
+
+    private static final int COLOR_OFFSET = 30; // RGB色差偏移量
 
 	private static String mImageOutPath = "";
 	private static int mBasicR = 0;
 	private static int mBasicG = 0;
 	private static int mBasicB = 0;
-	private static int mColorOffset = 30;
 	private static int mPersonX = 0;
 	private static int mPersonY = 0;
 	private static int mTargetX = 0;
 	private static int mTargetY = 0;
 	
 	private static int mJumpTime = 0;
-	private static int mTargetHeight = 250;
+	private static int mTargetHeight = SCREEN_HEIGHT / 8;
 	
+    private static JFrame mJFrame;
+    private static BackgroundPanel mBackgroundPanel0;
+    private static BackgroundPanel mBackgroundPanel1;
+    private static Container mContainer;
+    private static boolean mPanelIs0 = true;
+
+    public static class BackgroundPanel extends JPanel  
+    {  
+        Image im;  
+        public BackgroundPanel(Image im)  
+        {  
+            this.im=im;  
+            this.setOpaque(true);                    //设置控件不透明,若是false,那么就是透明
+        }  
+        //Draw the background again,继承自Jpanle,是Swing控件需要继承实现的方法,而不是AWT中的Paint()
+        public void paintComponent(Graphics g)       //绘图类,详情可见博主的Java 下 java-Graphics 
+        {  
+            super.paintComponents(g);  
+            g.drawImage(im,0,0,this.getWidth(),this.getHeight(),this);  //绘制指定图像中当前可用的图像。图像的左上角位于该图形上下文坐标空间的 (x, y)。图像中的透明像素不影响该处已存在的像素
+
+        }  
+    }
+
 	public static void main(String args[]){
+        mJFrame = new JFrame("Screenshot");
+        mContainer = mJFrame.getContentPane();
+
+        mPanelIs0 = true;
+        mBackgroundPanel0 = new BackgroundPanel((new ImageIcon(IMAGE_PATH)).getImage());
+        mBackgroundPanel0.setBounds(0,0,400,300);  
+        mContainer.add(mBackgroundPanel0);
+
+        mJFrame.setSize(480, 869);
+        mJFrame.setLocation(200, 200);
+        mJFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        mJFrame.setVisible(true);
+        
 		double time = 0;
 		mJumpTime = 0;
 		while(true){
@@ -50,11 +95,33 @@ public class Tiaotiao {
 				System.out.println("Need swipe time = " + time + "\n");
 				swipeTime((long) time);
 				deleteOldScreenshotOut();
-				Thread.sleep(3000); 
+				
+                if (mPanelIs0){
+                    mPanelIs0 = false;
+                    mContainer.remove(mBackgroundPanel0);
+                    mContainer.repaint();
+                    mBackgroundPanel1 = new BackgroundPanel((new ImageIcon(mImageOutPath)).getImage());
+                    mBackgroundPanel1.setBounds(0,0,400,300);  
+                    mContainer.add(mBackgroundPanel1);
+                    mContainer.validate();
+                } else {
+                    mPanelIs0 = true;
+                    mContainer.remove(mBackgroundPanel1);
+                    mContainer.repaint();
+                    mBackgroundPanel0 = new BackgroundPanel((new ImageIcon(mImageOutPath)).getImage());
+                    mBackgroundPanel0.setBounds(0,0,400,300);  
+                    mContainer.add(mBackgroundPanel0);
+                    mContainer.validate();
+                }
+                Thread.sleep(3000); 
+        
 				mJumpTime ++;
 				if (mJumpTime % 10 == 0){
 					mTargetHeight = mTargetHeight - 5;
 				}
+                if (mTargetHeight < 20){
+                    mTargetHeight = 20;
+                }
 			} catch (Exception ex){
 				
 			}
@@ -118,8 +185,8 @@ public class Tiaotiao {
         int targetG = 0;
         int targetB = 0;
         
-        // 获取背景色值，这里直接选取坐标（500, 500）这个点的颜色值，不同分辨率手机要依据实际情况修改
-        int pixel = bi.getRGB(500, 500);  
+        // 获取背景色值，这里直接选取坐标屏幕4分之一处这个点的颜色值，不同分辨率手机要依据实际情况修改
+        int pixel = bi.getRGB(SCREEN_START_Y, SCREEN_START_Y);  
         mBasicR = (pixel & 0xff0000) >> 16;  
         mBasicG = (pixel & 0xff00) >> 8;  
         mBasicB = (pixel & 0xff);  
@@ -134,7 +201,7 @@ public class Tiaotiao {
                 rgb[2] = (pixel & 0xff);  
 
                 // 背景颜色跳过
-                if (getColorOffset(mBasicR, mBasicG, mBasicB, rgb[0], rgb[1], rgb[2]) < mColorOffset){
+                if (getColorOffset(mBasicR, mBasicG, mBasicB, rgb[0], rgb[1], rgb[2]) < COLOR_OFFSET){
                 	continue;
                 }
                
@@ -180,7 +247,7 @@ public class Tiaotiao {
                 rgb[2] = (pixel & 0xff);  
 
                 // 背景颜色跳过
-                if (getColorOffset(mBasicR, mBasicG, mBasicB, rgb[0], rgb[1], rgb[2]) < mColorOffset){
+                if (getColorOffset(mBasicR, mBasicG, mBasicB, rgb[0], rgb[1], rgb[2]) < COLOR_OFFSET){
                 	continue;
                 }
                 
@@ -215,8 +282,11 @@ public class Tiaotiao {
             }  
         }  
         
-        mTargetX = targetStartX;
-        mTargetY = targetStartY + ((targetEndY - targetStartY) / 2) - 10;
+        mTargetX = targetStartX - 5;
+        mTargetY = targetStartY + ((targetEndY - targetStartY) / 2) - 15;
+        if(mTargetY - targetStartY < 5){
+            mTargetY = targetStartY + 5;
+        }
         
         System.out.println("mPersonX = " + mPersonX + ", mPsersonY = " + mPersonY + ", mTargetX = " + mTargetX + ", mTargetY = " + mTargetY);
 
