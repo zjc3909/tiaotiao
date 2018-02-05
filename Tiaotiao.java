@@ -62,6 +62,11 @@ public class Tiaotiao {
     }
 
 	public static void main(String args[]){
+
+        File outFile = new File(IMAGE_OUT_PATH);
+        if(!outFile.exists()){
+            outFile.mkdirs();
+        }
         mJFrame = new JFrame("Screenshot");
         mContainer = mJFrame.getContentPane();
 
@@ -92,7 +97,7 @@ public class Tiaotiao {
                 }
 				time = Math.sqrt((mTargetX - mPersonX) * (mTargetX - mPersonX) + (mTargetY - mPersonY) * (mTargetY - mPersonY));
 				time = time * 1.35;
-				System.out.println("Need swipe time = " + time + "\n");
+				System.out.println("Step: " + mJumpTime + ", need swipe time = " + time + "\n");
 				swipeTime((long) time);
 				deleteOldScreenshotOut();
 				
@@ -117,7 +122,7 @@ public class Tiaotiao {
         
 				mJumpTime ++;
 				if (mJumpTime % 10 == 0){
-					mTargetHeight = mTargetHeight - 5;
+					mTargetHeight = mTargetHeight - 1;
 				}
                 if (mTargetHeight < 20){
                     mTargetHeight = 20;
